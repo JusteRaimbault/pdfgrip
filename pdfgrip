@@ -1,0 +1,50 @@
+
+# shell tool to grip protected pdf as pngs in a new pdf
+# (ok for printing, bof otherwise)
+# requires : xpdf, screensaver, imagemagick
+
+
+IN=test/in.pdf
+OUT=test/out.pdf
+PAGES=2
+CROPLEFT=+14+50
+CROPRIGHT=-920-90
+SLEEP=3
+
+p=1
+f=001
+
+mkdir tmp
+
+while [[ "$p" -lt "$PAGES" ]]
+do
+  echo "page "$p
+  xpdf -z 180 $IN $p &\sleep $SLEEP; screencapture 'tmp/png'$f'.png'
+  convert -crop $CROPLEFT 'tmp/png'$f'.png' 'tmp/left'$f'.png'
+  convert -crop $CROPRIGHT 'tmp/left'$f'.png' 'tmp/cropped'$f'.png'
+  # conversion : done in one time at the end ?
+  #convert 'tmp/cropped'$p'.png' 'tmp/pdf'$p'.pdf'
+  p=$((p+1))
+  if [[ "$p" -lt 10 ]]
+  then
+    f=00$p
+  elif [[ "$p" -lt 100 ]]
+  then
+    f=0$p
+  else
+    f=$p
+  fi
+done
+
+
+# concatenate pdfs - convert directly
+cd tmp
+convert $(ls | grep cropped) -resize 1240x1753 \
+                      -units PixelsPerInch -density 150x150 \
+                      -page a4 ../$OUT
+
+
+# clean
+rm -r -f tmp
+
+
